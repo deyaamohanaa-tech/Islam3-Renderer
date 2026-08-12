@@ -1,6 +1,10 @@
 FROM python:3.11-slim
 
-# تثبيت الحزم ومكتبات النظام لـ Playwright ودعم الخطوط والإيموجي
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies for Playwright and Chromium with root user
+USER root
 RUN apt-get update && apt-get install -y \
     fonts-noto-color-emoji \
     fonts-liberation \
@@ -16,20 +20,21 @@ RUN apt-get update && apt-get install -y \
     libxrandr2 \
     libgbm1 \
     libpangoft2-1.0-0 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-# نسخ الملفات والمتطلبات
+# Copy requirements and install python dependencies
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
-RUN pip3 install --no-cache-dir fastapi uvicorn pydantic requests
+RUN pip install --no-cache-dir -r requirements.txt
 
-# تثبيت متصفح Chromium الخاص بـ Playwright بكامل مكتباته
-RUN python3 -m playwright install --with-deps chromium
+# Install playwright browsers
+RUN playwright install chromium
 
-COPY . /app
+# Copy application files
+COPY . .
 
+# Expose port for FastAPI
 EXPOSE 8080
 
+# Command to run the FastAPI service using uvicorn
 CMD ["uvicorn", "render_service:app", "--host", "0.0.0.0", "--port", "8080"]
